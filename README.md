@@ -54,19 +54,22 @@ The dataset used is a CSV file (`retail-sale-data.csv`) containing **2001 sales 
 
 ## 📎 Sample Queries
 
-### 🏆 Best-Selling Month per Year
+###  month-over-month growth rate in sales.
 ```sql
 SELECT 
-  sale_year,
-  sale_month,
-  total_sales
-FROM (
-  SELECT 
-    YEAR(sale_date) AS sale_year,
-    MONTH(sale_date) AS sale_month,
-    SUM(total_sale) AS total_sales,
-    RANK() OVER (PARTITION BY YEAR(sale_date) ORDER BY SUM(total_sale) DESC) AS rank
-  FROM retail_sales
-  GROUP BY YEAR(sale_date), MONTH(sale_date)
-) AS ranked
-WHERE rank = 1;
+    DATE_FORMAT(sale_date, '%Y-%m') AS sale_month,
+    SUM(total_sale) AS monthly_sales,
+    LAG(SUM(total_sale)) OVER (ORDER BY DATE_FORMAT(sale_date, '%Y-%m')) AS previous_month_sales,
+    ROUND(
+        (SUM(total_sale) - LAG(SUM(total_sale)) OVER (ORDER BY DATE_FORMAT(sale_date, '%Y-%m')))
+        / LAG(SUM(total_sale)) OVER (ORDER BY DATE_FORMAT(sale_date, '%Y-%m')) * 100,
+        2
+    ) AS growth_rate_percent
+FROM 
+    retail_sales
+GROUP BY 
+    DATE_FORMAT(sale_date, '%Y-%m')
+ORDER BY 
+    sale_month;
+
+
